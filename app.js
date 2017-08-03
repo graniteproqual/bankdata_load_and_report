@@ -1,13 +1,24 @@
-let express         = require('express');
-let path            = require('path');
-let favicon         = require('serve-favicon');
-let logger          = require('morgan');
-let cookieParser    = require('cookie-parser');
-let bodyParser      = require('body-parser');
-let sassMiddleware  = require('node-sass-middleware');
+const express         = require('express');
+const path            = require('path');
+const favicon         = require('serve-favicon');
+const logger          = require('morgan');
+const cookieParser    = require('cookie-parser');
+const bodyParser      = require('body-parser');
+const sassMiddleware  = require('node-sass-middleware');
 
-let index = require('./cdr_getdata_server/routes/index');
-let users = require('./cdr_getdata_server/routes/users');
+const index           = require('./cdr_getdata_server/routes/index');
+const users           = require('./cdr_getdata_server/routes/users');
+
+const cycleHandler    = require( './helpers/cyclehandler.js');
+const settings        = require( './config/settings.json');
+const cycleCheck      = cycleHandler(
+  50,
+  function(){ console.log( `cycle: ${cycle}`)}
+);
+
+setInterval(function () {
+  cycleCheck();
+}, settings.interval);
 
 let app = express();
 
@@ -34,7 +45,7 @@ app.use('/users', users);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
-  var err = new Error('Not Found');
+  let err = new Error('Not Found');
   err.status = 404;
   next(err);
 });
