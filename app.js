@@ -15,17 +15,12 @@ const wsdl = 'https://cdr.ffiec.gov/public/pws/webservices/retrievalservice.asmx
 
 const sinceDateUtils = require( './helpers/sincedate')( 'status/since_date.json');
 
-
-
-
 const cycleHandler    = require( './helpers/cyclehandler.js');
 const settings        = require( './config/settings.json');
+
+//cycleHandler( limit = 50, everyCycle = ()=>{}, atLimit = ()=>{}) => {...}
 const cycleCheck      = cycleHandler(
-  4,  // cycle to this limit, then recycle from 0
-  function( /* cycle */ ) {
-    ()=>{};//console.log( 'cycle: ' + cycle);,        // callback on each cycle
-    console.log( 'reached limit, recycling') // callback on limit
-  }
+  4,()=>{},()=>{console.log( 'reached limit, recycling')} // callback on limit
 );
 
 console.log( `settings interval ${settings.interval}`);
