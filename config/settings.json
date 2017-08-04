@@ -1,5 +1,5 @@
 {
-  "interval"      : 30000  ,
+  "interval"      : 5000  ,
   "cycleLimit"    : 1     ,
   "tmpFileLoc"    : "./tmp/"
 }

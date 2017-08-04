@@ -1,3 +1,4 @@
+'use strict';
 const express         = require('express');
 const path            = require('path');
 const favicon         = require('serve-favicon');
@@ -9,15 +10,32 @@ const sassMiddleware  = require('node-sass-middleware');
 const index           = require('./cdr_getdata_server/routes/index');
 const users           = require('./cdr_getdata_server/routes/users');
 
+const soap = require( 'strong-soap').soap;
+const wsdl = 'https://cdr.ffiec.gov/public/pws/webservices/retrievalservice.asmx?WSDL';
+
+const sinceDateUtils = require( './helpers/sincedate')( 'status/since_date.json');
+
+
+
+
 const cycleHandler    = require( './helpers/cyclehandler.js');
 const settings        = require( './config/settings.json');
 const cycleCheck      = cycleHandler(
-  50,
-  function(){ console.log( `cycle: ${cycle}`)}
+  4,  // cycle to this limit, then recycle from 0
+  function( /* cycle */ ) {
+    ()=>{};//console.log( 'cycle: ' + cycle);,        // callback on each cycle
+    console.log( 'reached limit, recycling') // callback on limit
+  }
 );
+
+console.log( `settings interval ${settings.interval}`);
 
 setInterval(function () {
   cycleCheck();
+  (sinceDateUtils.read())
+  .then(( sinceDate)=> {
+    console.log( 'returned: ' + sinceDate);
+  })
 }, settings.interval);
 
 let app = express();
