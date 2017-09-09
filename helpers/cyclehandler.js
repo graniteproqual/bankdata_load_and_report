@@ -1,5 +1,6 @@
 // cycleHandler (.js)
 'use strict';
+const log             = require( './loghandler.js');
 module.exports = ( limit = 50, everyCycle = ()=>{}, atLimit = ()=>{}) => {
   let cycle = 0;
   let retval = false;

@@ -1,11 +1,12 @@
 
-const fs      = require( 'fs-jetpack');
-const util    = require( 'util');
+const fs     = require( 'fs-jetpack');
+const util   = require( 'util');
 
 const jsonParseAsync = require( './jsonparseasync');
+const log            = require( './loghandler');
 
 module.exports = function( sinceDateFile) {
-  console.log( `Initializing sinceDate utils object with ${ sinceDateFile}`);
+  log( `Initializing sinceDate utils object with ${ sinceDateFile}`);
   return {
     "read": () => {
       return (fs.readAsync(sinceDateFile, 'utf8'))
@@ -16,12 +17,12 @@ module.exports = function( sinceDateFile) {
         return (json.sincedate);
       })
       .catch((err) => {
-        console.log(util.inspect(err));
+        log(util.inspect(err), 'ERROR');
       });
     },
     "write": () => {
       "use strict";
-      console.log('getSinceDate');
+      log('getSinceDate');
     }
   }
 };

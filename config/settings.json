@@ -1,5 +1,10 @@
 {
-  "interval"      : 5000  ,
-  "cycleLimit"    : 1     ,
-  "tmpFileLoc"    : "./tmp/"
+  "interval"    :120000,
+  "cycleLimit"  : 1,
+  "tmpFileLoc"  : "~/output/instance_docs/",
+  "cdrUrl"      : "https://cdr.ffiec.gov/public/pws/webservices/retrievalservice.asmx?WSDL",
+  "fcdrUrl"      : "./public/soap/cdr.wsdl",
+  "data"        : "/Users/johnchmielowski/sdev-data/",
+  "cdrUserName" : "castorenae",
+  "cdrPassword" : "vJZSRSm5mbSefv53MyZl"
 }
