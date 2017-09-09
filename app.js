@@ -44,46 +44,17 @@ let maxFilesOpen = 100;
 let filesOpen = 0;
 
 //===========================================================================
-soap.createClientAsync(settings.cdrUrl, {forceSoap12Headers: true})
-  .then( (client)=> {
-    soapClient = client;
-    log(`have a soapClient working against ${settings.cdrUrl}`);
-    return( client)
-  })
-  .then((client)=>{  // to learn how createClientAsync works
-    let res = [];
-      for(var m in soapClient) {
-        if(typeof soapClient[m] == "function") {
-          res.push(m)
-        }
-      };
-    log(`soapClient methods: ${res}`);
-    return(client) /*( soapClient.describeAsync())*/;     //describe());
-  })
-  .then((client)=>{
-    log( 'prep security configuration on client');
-    let options={};
-    return(new soap.BasicAuthSecurity(settings.cdrUserName, settings.cdrPassword));
-  })
-  .then((wsSecurityConfig)=> {
-    log( `wsSecurityConfig: ${wsSecurityConfig}` );
-    return (soapClient.setSecurity(wsSecurityConfig));
-  })
-  .then(()=> {
+
     log( 'startng interval timer');
     setInterval(function loadAllCallReports() {
-    cycleCheck();
-    sinceDateUtils.read()
-    .then((sinceDate) => {
-      log( `Have sinceDate`);
-      log( `Looking for instance docs here: ${downloadedInstanceDocsLocation}`);
+      cycleCheck();
       fs.findAsync(downloadedInstanceDocsLocation, {matching: "FFIEC*"})
         .then((ra) => {
-          log( 'Have an array of length: ' + ra.length );
-          if (ra && (ra.length > 0)) {
-            log( `found matching Call Reports: ${ra.length}`);
-            let allPromises = ra.map((aCallReportFile) => {
-              while( filesOpen > maxFilesOpen) { log( `Files Open: ${fileOpen}`)};
+        log( 'Have an array of length: ' + ra.length );
+        if (ra && (ra.length > 0)) {
+          log( `found matching Call Reports: ${ra.length}`);
+          let allPromises = ra.map((aCallReportFile) => {
+            while( filesOpen > maxFilesOpen) { log( `Files Open: ${fileOpen}`)};
               filesOpen++;
               log( 'opening a file');
               let json = {};
@@ -125,9 +96,7 @@ soap.createClientAsync(settings.cdrUrl, {forceSoap12Headers: true})
       log( `Error in an interval: ${util.inspect(err)}`,'ERR');
     })
   return loadAllCallReports}(), settings.interval);
-}).catch((err)=>{
-  log( `Error on createClientAsync: ${util.inspect(err)}`,'ERR');
-});
+
 
 let app = express();
 
