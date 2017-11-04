@@ -1,0 +1,6 @@
+{
+  "other_settings_json"   : "./config/settings.json"                                                 ,
+  "shared_settings_json"  : "./config/shared_settings.json",
+  "soap_settings_json"    : "./config/soap_settings.json"
+}
+

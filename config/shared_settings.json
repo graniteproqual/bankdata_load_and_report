@@ -1,0 +1,7 @@
+{
+"inst_doc_folder" : "~/sdev-data/xbrl_in/",
+"processed_folder": "~/sdev-data/xbrl_processed/",
+"other_doc_folder": "~/sdev-data/other_docs/",
+"por_folder"      : "~/sdev-data/por_folder/"
+}
+

@@ -7,29 +7,25 @@ const logger          = require( 'morgan');
 const cookieParser    = require( 'cookie-parser');
 const bodyParser      = require( 'body-parser');
 const sassMiddleware  = require( 'node-sass-middleware');
-const soap            = require( 'soap');
 const fs              = require( 'fs-jetpack');
 const Promise         = require( 'bluebird');
-const _               = require( 'lodash');
 
-const index  = require( './cdr_getdata_server/routes/index');
-const users  = require( './cdr_getdata_server/routes/users');
+const index  = require( './load_and_report_server/routes/index');
+const users  = require( './load_and_report_server/routes/users');
 
-const wsdl   = 'https://cdr.ffiec.gov/public/pws/webservices/retrievalservice.asmx?WSDL';
-
-const sinceDateUtils  = require( './helpers/sincedate')( './status/since_date.json');
 const cycleHandler    = require( './helpers/cyclehandler.js');
 const log             = require( './helpers/loghandler.js');
-const filersFromFile  = require( './helpers/filersforuseuntilwecanaccesscdr.json');
 const xbrlfile2Json   = require( './helpers/xbrlfile2json');
 const jsonParseAsync  = require( './helpers/jsonparseasync');
-const bankData        = require( './cdr_getdata_server/models/bankdatamodel')();
+const bankData        = require( './load_and_report_server/models/bankdatamodel')();
 
-const settings                 = require( './config/settings.json');
 
-//const downloadedInstanceDocsLocation = path.join( __dirname, settings.data, 'xbrl-in') + '/';
-const downloadedInstanceDocsLocation = settings.data + 'xbrl-in/';
-const processedInstanceDocsLocation = settings.data + 'xbrl-processed/';
+const configFileLocations = require( './config/config_file_locations.json');
+const sharedSettingsJson  = require( configFileLocations.shared_settings_json);
+const settings            = require( configFileLocations.other_settings_json);
+
+const downloadedInstanceDocsLocation = sharedSettingsJson.inst_doc_folder.replace('~',process.env['HOME']);
+const processedInstanceDocsLocation  = sharedSettingsJson.processed_folder.replace('~',process.env['HOME']);
 //cycleHandler( limit = 50, everyCycle = ()=>{}, atLimit = ()=>{}) => {...}
 const cycleCheck      = cycleHandler(
   4,()=>{},()=>{log( 'reached limit, recycling')} // callback on limit
@@ -37,71 +33,66 @@ const cycleCheck      = cycleHandler(
 
 log( `settings interval ${settings.interval}`);
 
-let options = {};
-const dataSeries = 'Call';
-let soapClient = {};
 let maxFilesOpen = 100;
-let filesOpen = 0;
+let filesOpen = 0; // throttle processing because we can easily get too many files open at the same time
 
 //===========================================================================
+//periodically process any recently downloaded instance documents
+log( 'startng interval timer');
+setInterval(function loadAllCallReports() {
+  log( 'starting an interval');
+  cycleCheck();
+  log( `downloadedInstanceDocsLocation ${downloadedInstanceDocsLocation}`);
+  fs.findAsync(downloadedInstanceDocsLocation, {matching: 'FFIEC*'})
+  .then((ra) => {
+  log( 'Have an array of length: ' + ra.length );
+  if (ra && (ra.length > 0)) {
+    log( `found matching Call Reports: ${ra.length}`);
+    let allPromises = ra.map((aCallReportFile) => {
+      while( filesOpen > maxFilesOpen) { log( `Files Open: ${filesOpen}`)}
+        filesOpen++;
+        log( 'opening a file');
+        let json = {};
 
-    log( 'startng interval timer');
-    setInterval(function loadAllCallReports() {
-      cycleCheck();
-      fs.findAsync(downloadedInstanceDocsLocation, {matching: "FFIEC*"})
-        .then((ra) => {
-        log( 'Have an array of length: ' + ra.length );
-        if (ra && (ra.length > 0)) {
-          log( `found matching Call Reports: ${ra.length}`);
-          let allPromises = ra.map((aCallReportFile) => {
-            while( filesOpen > maxFilesOpen) { log( `Files Open: ${fileOpen}`)};
-              filesOpen++;
-              log( 'opening a file');
-              let json = {};
-  
-              xbrlfile2Json(aCallReportFile)
-                .then((jsonString) => {  //parse string into a json object
-                  return( jsonParseAsync(jsonString));
-                })
-                .then((parsedJsonString) => {  // update database
-                  json = parsedJsonString;
-                  // let idrssd = _.get( json, 'xbrl.context[1].entity.identifier._text' );
-                  // let cert   = _.get( json, 'xbrl.cc:RSSD9050._text');
-                  // let period = _.get( json, 'xbrl.context[1].period.instant._text' );
-                  return( bankData.writeBankInfo(json));
-                })
-                .then(()=>{
-                log( 'writing to mongo db');
-                  return( bankData.writeCallReport(json));
-                })
-                .then(()=>{
-                log( `moving ${aCallReportFile} to: ${processedInstanceDocsLocation + aCallReportFile.split('\\').pop().split('/').pop()}`);
-                  return(
-                  fs.moveAsync( aCallReportFile, processedInstanceDocsLocation + aCallReportFile.split('\\').pop().split('/').pop())
-                  );
-                })
-                .then( ()=>{filesOpen--;})
-                .catch((err) => {
-                  log(`Error on inserting in mongodb: ${util.inspect(err)}`);
-                });
-              });
-            return ( Promise.all(allPromises));
-          }
-        })
-        .catch((err) => {
-          /* continue */
-        })
-      })
-    .catch((err)=>{
-      log( `Error in an interval: ${util.inspect(err)}`,'ERR');
-    })
-  return loadAllCallReports}(), settings.interval);
-
+        xbrlfile2Json(aCallReportFile)
+          .then((jsonString) => {  //parse string into a json object
+            return( jsonParseAsync(jsonString));
+          })
+          .then((parsedJsonString) => {  // update database
+            json = parsedJsonString;
+            // let idrssd = _.get( json, 'xbrl.context[1].entity.identifier._text' );
+            // let cert   = _.get( json, 'xbrl.cc:RSSD9050._text');
+            // let period = _.get( json, 'xbrl.context[1].period.instant._text' );
+            return( bankData.writeBankInfo(json));
+          })
+          .then(()=>{
+          log( 'writing to mongo db');
+            return( bankData.writeCallReport(json));
+          })
+          .then(()=>{
+          log( `moving ${aCallReportFile} to: ${processedInstanceDocsLocation + aCallReportFile.split('\\').pop().split('/').pop()}`);
+            return(
+            fs.moveAsync( aCallReportFile, processedInstanceDocsLocation + aCallReportFile.split('\\').pop().split('/').pop())
+            );
+          })
+          .then( ()=>{filesOpen--;})
+          .catch((err) => {
+            log(`Error on inserting in mongodb: ${util.inspect(err)}`);
+          });
+        });
+      return ( Promise.all(allPromises));
+    }
+  })
+  .catch((err) => {
+    
+    log(`Error on finding : ${downloadedInstanceDocsLocation} : ` + err);
+  })
+}, settings.interval);
 
 let app = express();
 
 // view engine setup
-app.set('views', path.join(__dirname, 'cdr_getdata_server', 'views'));
+app.set('views', path.join(__dirname, 'load_and_report_server', 'views'));
 app.set('view engine', 'pug');
 
 
@@ -129,7 +120,7 @@ app.use(function(req, res, next) {
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function(err, req, res) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};

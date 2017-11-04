@@ -1,10 +1,10 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 mongoose.Promise = require( 'bluebird').Promise ; //require( 'bluebird');
 const Schema = mongoose.Schema;
 
 // _id will hold leading zero filled idrssd
 let bankInfoSchema = new Schema({
-  _id:          {type: String, required: true, unique: true},
+  _id:          {type: String, required: true},
   cert:         {type: String, required: true, unique: true},
   instName:     {type: String, required: false},
   instAddress:  {type: String, required: false},
@@ -12,7 +12,7 @@ let bankInfoSchema = new Schema({
   instState:    {type: String, required: false},
   instZip:      {type: String, required: false}
 });
-bankInfoSchema.index({cert: 1});  // index to quickly find cert,
+//bankInfoSchema.index({cert: 1});  // index to quickly find cert,
                                   // then use bankInfo _id (which is really idrssd) to find bankCall document(s)
 
 let bankCallSchema = new Schema({
