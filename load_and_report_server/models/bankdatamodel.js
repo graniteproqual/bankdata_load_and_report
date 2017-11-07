@@ -5,7 +5,7 @@ const Promise    = require( 'bluebird');
 const mongoose   = require( 'mongoose');
 mongoose.Promise = Promise.Promise ;
 
-const _       = require( 'lodash');
+const _ = require( 'lodash');
 
 module.exports = function( connection = 'mongodb://localhost:27017') {
   mongoose.connect(connection, {useMongoClient: true});  // useMongoClient for mongoos >= 4.11.0
